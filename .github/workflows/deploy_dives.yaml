@@ -1,0 +1,117 @@
+name: Deploy Dives
+
+# Permissions needed for workflow to fetch OIDC tokens when assuming AWS role.
+permissions:
+  pull-requests: write
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  compute_changes:
+    runs-on: ubuntu-latest
+    name: Identify Changed Dives
+    outputs:
+      changed_dives: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          token: "" # This ensures that the 'base' parameter is taken into account
+          base: "main"    # Workflow triggered by push event when base input parameter is the same as the branch that triggered the workflow. Changes are detected against the most recent commit on the same branch before the push
+          filters: |
+            # Register each dive folder here (name must match folder)
+            uber-analytics: dives/uber-analytics/**
+
+  deploy:
+    name: Deploy Dives
+    needs: compute_changes
+    if: github.ref == 'refs/heads/main' && needs.compute_changes.outputs.changed_dives != '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install DuckDB v1.4.4
+        run: |
+          curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.4.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
+          unzip duckdb.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/duckdb
+          duckdb --version
+      - name: Deploy Dives
+        shell: bash
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          for d in $(jq -r '.[]' <<< '${{ needs.compute_changes.outputs.changed_dives }}'); do
+            echo "Deploying ${d}..."
+            ./scripts/deploy-dive.sh "$d"
+          done
+
+  deploy-preview:
+    name: Deploy Dives for preview
+    needs: compute_changes
+    if: github.event_name == 'pull_request' && needs.compute_changes.outputs.changed_dives != '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install DuckDB v1.4.4
+        run: |
+          curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.4.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
+          unzip duckdb.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/duckdb
+          duckdb --version
+      - name: Deploy Dives for preview
+        id: deploy-preview
+        shell: bash
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          PREVIEW_BRANCH: ${{ github.head_ref }}
+        run: |
+          COMMENT_BODY=""
+          for d in $(jq -r '.[]' <<< '${{ needs.compute_changes.outputs.changed_dives }}'); do
+            echo "Deploying preview for ${d}..."
+            COMMENT_BODY="${COMMENT_BODY}$(./scripts/deploy-dive.sh "$d")"$'\n'
+          done
+          echo "comment_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMENT_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- preview-dives-comment -->';
+            const body = `${marker}
+            ### 🦆 Preview Dives
+
+            | Dive | Link |
+            |------|------|
+            ${{ steps.deploy-preview.outputs.comment_body }}`.replace(/^ +/gm, '');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
