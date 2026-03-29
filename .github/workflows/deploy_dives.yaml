@@ -38,9 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: opt-nc/setup-duckdb-action@v1.2.2
-        with:
-          version: v1.4.4
+      - name: Install DuckDB v1.4.4
+        run: |
+          curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.4.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
+          unzip duckdb.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/duckdb
+          duckdb --version
       - name: Deploy Dives
         shell: bash
         env:
@@ -58,9 +61,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: opt-nc/setup-duckdb-action@v1.2.2
-        with:
-          version: v1.4.4
+      - name: Install DuckDB v1.4.4
+        run: |
+          curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.4.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
+          unzip duckdb.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/duckdb
+          duckdb --version
       - name: Deploy Dives for preview
         id: deploy-preview
         shell: bash
