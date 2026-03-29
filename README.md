@@ -11,6 +11,7 @@ Dives are interactive React + SQL visualisations that query live MotherDuck data
 | Dive | Description |
 |---|---|
 | `uber-analytics` | Ride-hailing spend analysis — monthly trends, day-of-week patterns, trip size distribution, and an interactive calculator to determine when buying a car makes more financial sense than continuing to use Uber |
+| `stamp-duty` | Nigerian government stamp duty monitor — tracks the ₦50 flat levy charged on every outbound transfer, with weekly trends, top receiving banks, and a recent charges feed |
 
 ---
 

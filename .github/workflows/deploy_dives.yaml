@@ -30,6 +30,7 @@ jobs:
           filters: |
             # Register each dive folder here (name must match folder)
             uber-analytics: dives/uber-analytics/**
+            stamp-duty: dives/stamp-duty/**
 
   deploy:
     name: Deploy Dives
