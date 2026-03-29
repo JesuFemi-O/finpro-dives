@@ -16,7 +16,8 @@ personal bank transaction email alerts.
 ```
 .
 ├── claude_context/          # Domain context — read before building
-│   └── ride_hailing.md      # Data shape, filters, edge cases
+│   ├── ride_hailing.md      # Data shape, filters, edge cases
+│   └── design_guide.md      # Visual design system and component patterns
 ├── dives/                   # One folder per dive
 │   └── <dive-name>/
 │       ├── <dive-name>.tsx  # The dive component — source of truth
@@ -39,6 +40,7 @@ understand what you are querying before writing a single line of SQL.
 | File | Read when |
 |---|---|
 | `claude_context/ride_hailing.md` | Building any ride-hailing dive |
+| `claude_context/design_guide.md` | Building or editing any dive UI |
 
 ---
 
@@ -125,6 +127,29 @@ npm run dev             # http://localhost:5173
 
 To update which dives CI watches, edit the `filters:` block in
 `.github/workflows/deploy_dives.yaml`.
+
+---
+
+## Keeping Docs in Sync
+
+After making any meaningful change to this repo, check whether
+`CLAUDE.md` and `README.md` are still accurate. Do this before
+opening a PR — not as an afterthought.
+
+Triggers that require a check:
+
+| Change made | What to review |
+|---|---|
+| New dive added | README dive table, CLAUDE.md context file table if new domain |
+| New context file added | CLAUDE.md context files table + repo structure tree |
+| CI/CD workflow changed | README CI/CD section, CLAUDE.md Deployment section |
+| New script or Makefile target added | README getting started / adding a dive sections |
+| Design patterns introduced or changed | `claude_context/design_guide.md` |
+| `deploy-dive.sh` behaviour changed | CLAUDE.md Working With a Dive section |
+
+If the docs are already accurate, no change is needed — but the check
+must always happen. This prevents CLAUDE.md from drifting away from
+the actual state of the repo over time.
 
 ---
 
