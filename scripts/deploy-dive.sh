@@ -61,6 +61,20 @@ else
   exit 1
 fi
 
+# Write ID back to dive_metadata.json if it was just created
+CURRENT_ID=$(jq -r '.id' "${DIVE_DIR}/dive_metadata.json")
+if [ -z "${CURRENT_ID}" ] && [ -z "${PREVIEW_BRANCH:-}" ]; then
+  jq --arg id "${DIVE_ID}" '.id = $id' "${DIVE_DIR}/dive_metadata.json" > /tmp/dive_metadata.json
+  mv /tmp/dive_metadata.json "${DIVE_DIR}/dive_metadata.json"
+  echo "  Updated dive_metadata.json with id=${DIVE_ID}" >&2
+
+  git config user.name  "github-actions[bot]"
+  git config user.email "github-actions[bot]@users.noreply.github.com"
+  git add "${DIVE_DIR}/dive_metadata.json"
+  git commit -m "ci: set dive id for ${DIVE_NAME} after first deploy [skip ci]"
+  git push
+fi
+
 echo "  Deployed: https://app.motherduck.com/dives/${DIVE_ID}" >&2
 
 if [ -n "${PREVIEW_BRANCH:-}" ]; then

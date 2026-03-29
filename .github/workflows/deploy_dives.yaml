@@ -3,7 +3,7 @@ name: Deploy Dives
 # Permissions needed for workflow to fetch OIDC tokens when assuming AWS role.
 permissions:
   pull-requests: write
-  contents: read
+  contents: write
 
 on:
   workflow_dispatch:
